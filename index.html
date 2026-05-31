@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>Loading...</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #fff;
+      --text: #1f2937;
+      --subtle: #6b7280;
+      --primary: #2563eb;
+      --border: rgba(15, 23, 42, 0.08);
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: radial-gradient(circle at top, #fff 0%, var(--bg) 58%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    img { max-width: 100%; display: block; }
+    #app { display: none; min-height: 100vh; }
+    .page { min-height: 100vh; padding: 20px 16px 88px; }
+    .container { max-width: 460px; margin: 0 auto; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .safe-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .safe-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.14);
+    }
+    .content { padding: 22px 20px 24px; }
+    .note {
+      margin: 0 0 20px;
+      line-height: 1.85;
+      font-size: 16px;
+      font-weight: 500;
+      text-align: center;
+      white-space: pre-line;
+      word-break: break-word;
+    }
+    .qrcode-wrap { display: flex; justify-content: center; }
+    .qrcode-link, .qrcode-box {
+      width: min(100%, 360px);
+      padding: 14px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    .warn-box {
+      text-align: center;
+      padding: 24px 16px;
+    }
+    .warn-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: #fef3c7;
+      color: #d97706;
+      font-size: 36px;
+      line-height: 72px;
+    }
+    .warn-text { font-size: 16px; font-weight: 600; line-height: 1.7; }
+    .warn-sub { margin-top: 10px; color: var(--subtle); font-size: 14px; }
+    .copy-button {
+      width: 180px;
+      height: 46px;
+      margin: 28px auto 0;
+      border: 1px solid var(--primary);
+      border-radius: 999px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #loading {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--subtle);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(37, 99, 235, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div>加载中…</div>
+</div>
+<div id="app"></div>
+<script>
+  (function () {
+    function getParam(name) {
+      var m = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
+      return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+    }
+
+    function getApiBase() {
+      return "https://xiaoxxhuoma.com"; // 👈 改成你的真实地址
+    }
+
+    function getGateKey() {
+      return getParam('key') || getParam('qun_key') || getParam('tk') || getParam('code') || '';
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    }
+
+    function setTitle(t) {
+      if (t) document.title = t;
+    }
+
+    function buildPage(inner) {
+      return '<div class="page"><div class="container">' + inner + '</div></div>';
+    }
+
+    function renderBase(data, inner) {
+      var html = '<div class="panel">';
+      if (Number(data.safety) === 1) {
+        html += '<div class="safe-banner"><span class="safe-dot"></span><span>安全验证</span></div>';
+      }
+      html += '<div class="content">';
+      if (data.beizhu) html += '<div class="note">' + escapeHtml(data.beizhu) + '</div>';
+      html += inner + '</div></div>';
+      return buildPage(html);
+    }
+
+    function renderWarn(data) {
+      setTitle(data.title || '提示');
+      return renderBase(data, '<div class="warn-box"><div class="warn-icon">!</div><p class="warn-text">' +
+              escapeHtml(data.warn_text || data.message || '无法访问') + '</p></div>');
+    }
+
+    function renderNotFound(msg) {
+      setTitle('404');
+      return buildPage('<div class="panel"><div class="content warn-box"><div class="warn-icon">?</div><p class="warn-text">' +
+              escapeHtml(msg || '活码不存在') + '</p></div></div>');
+    }
+
+    function renderIframe(data) {
+      setTitle(data.title || '跳转');
+      var url = data.target_url || data.zm_url || '';
+      var inner = '<div class="qrcode-wrap"><iframe src="' + escapeHtml(url) + '" title="content" ' +
+              'style="width:100%;min-height:75vh;border:0;border-radius:12px" referrerpolicy="no-referrer-when-downgrade"></iframe></div>';
+      return renderBase(data, inner);
+    }
+
+    function mountIframe(data) {
+      document.getElementById('app').innerHTML = renderIframe(data);
+      hideLoading();
+    }
+
+    function renderDisplay(data) {
+      setTitle(data.title || '活码');
+      var forceOpen = Number(data.force_open) === 1;
+      var zmUrl = data.zm_url || '';
+      var zmQrcode = data.zm_qrcode || '';
+      var imgHtml;
+      if (data.redirect && zmUrl && !forceOpen) {
+        imgHtml = '<a class="qrcode-link" href="' + escapeHtml(zmUrl) + '"><img src="' + escapeHtml(zmQrcode) + '" alt="qrcode" /></a>';
+      } else if (data.redirect && zmUrl && forceOpen) {
+        imgHtml = '<a class="qrcode-link lc-open-iframe" href="javascript:void(0)" data-url="' + escapeHtml(zmUrl) + '"><img src="' + escapeHtml(zmQrcode) + '" alt="qrcode" /></a>';
+      } else if (zmQrcode) {
+        imgHtml = '<div class="qrcode-box"><img src="' + escapeHtml(zmQrcode) + '" alt="qrcode" /></div>';
+      } else if (zmUrl) {
+        imgHtml = '<p style="text-align:center"><a href="' + escapeHtml(zmUrl) + '" style="color:#2563eb;font-size:16px">点击打开链接</a></p>';
+      } else {
+        imgHtml = '<p class="warn-text" style="text-align:center">暂无展示内容</p>';
+      }
+      var html = renderBase(data, '<div class="qrcode-wrap">' + imgHtml + '</div>');
+      var timer = Number(data.timer) || 0;
+      if (!forceOpen && timer > 0 && zmUrl) {
+        setTimeout(function () { location.href = zmUrl; }, timer * 1000);
+      } else if (forceOpen && timer > 0 && zmUrl) {
+        setTimeout(function () { mountIframe(Object.assign({}, data, { target_url: zmUrl })); }, timer * 1000);
+      }
+      return html;
+    }
+
+    function trackEvent(gateKey, eventType) {
+      if (!gateKey) return;
+      fetch(getApiBase() + '/gate/' + encodeURIComponent(gateKey) + '/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventType: eventType })
+      }).catch(function () {});
+    }
+
+    function applyPayload(payload) {
+      var app = document.getElementById('app');
+      var mode = payload.mode || 'warn';
+      var data = payload.data || {};
+      var gateKey = data.gate_key || getGateKey();
+
+      // 网址码：接口返回 redirect，直接跳转
+      if (mode === 'redirect' && data.target_url) {
+        trackEvent(gateKey, 1);
+        location.replace(data.target_url);
+        return;
+      }
+      if (mode === 'iframe') {
+        trackEvent(gateKey, 1);
+        mountIframe(data);
+        return;
+      }
+      if (mode === 'display') {
+        trackEvent(gateKey, 1);
+        app.innerHTML = renderDisplay(data);
+      } else if (mode === 'warn' || mode === 'guide_wechat') {
+        app.innerHTML = renderWarn(data);
+      } else {
+        app.innerHTML = renderNotFound(payload.message);
+      }
+      hideLoading();
+    }
+
+    function requestRender() {
+      var key = getGateKey();
+      var apiBase = getApiBase();
+      if (!key) {
+        applyPayload({ mode: 'not_found', message: '缺少活码tk' });
+        return;
+      }
+      var body = new URLSearchParams();
+      body.append('key', key);
+      fetch(apiBase + '/api/livecode/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: body.toString()
+      })
+              .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (r) {
+                if (r.data && r.data.mode) {
+                  applyPayload(r.data);
+                } else {
+                  applyPayload({ mode: 'not_found', message: (r.data && r.data.message) || '加载失败' });
+                }
+              })
+              .catch(function () {
+                applyPayload({ mode: 'not_found', message: '网络错误，请稍后重试' });
+              });
+    }
+
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('.lc-open-iframe');
+      if (!a) return;
+      e.preventDefault();
+      var url = a.getAttribute('data-url');
+      mountIframe({ title: document.title, target_url: url, zm_url: url, safety: 1 });
+    });
+
+    requestRender();
+  })();
+</script>
+</body>
+</html>
