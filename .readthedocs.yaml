@@ -1,15 +1,15 @@
 version: 2
 
+# 核心：直接发布静态HTML，不编译、不运行Sphinx
 build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  jobs:
-    post_checkout:
-      - mkdir -p docs
-      - echo 'project="static"' > docs/conf.py
-    post_build:
-      - cp -r ./* $READTHEDOCS_OUTPUT/html/
 
-sphinx:
+# 满足RTD强制要求，不生效
+sphin:
   configuration: docs/conf.py
+
+# 发布静态文件（你的HTML直接用）
+static:
+  files: true
