@@ -1,15 +1,9 @@
 version: 2
 
-# 核心：直接发布静态HTML，不编译、不运行Sphinx
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.11"
-
-# 满足RTD强制要求，不生效
-sphin:
+sphinx:
   configuration: docs/conf.py
 
-# 发布静态文件（你的HTML直接用）
-static:
-  files: true
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
